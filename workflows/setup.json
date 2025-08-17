@@ -1,0 +1,194 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload",
+        "options": {}
+      },
+      "id": "c469a310-e10e-4628-8667-3580d28b395a",
+      "name": "Webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        208,
+        560
+      ],
+      "webhookId": "06b8db56-21fb-4b30-9846-04a089083130"
+    },
+    {
+      "parameters": {
+        "jsCode": "const safeString = (str) => (typeof str === 'string' ? str : '');\n\nconst assignmentType = safeString(items[0]?.json?.assignmentType) || 'general';\nconst content = safeString(items[0]?.json?.content);\nconst userEmail = safeString(items[0]?.json?.userEmail) || 'no-email@example.com';\nconst fileName = safeString(items[0]?.json?.fileName).replace(/\\.[^.]+$/, '') || 'assignment';\n\nlet prompt = `<!DOCTYPE html><html><head><style>\n  body { font-family: Arial; line-height: 1.6; margin: 2cm; }\n  pre { background: #f8f9fa; padding: 15px; border-radius: 5px; }\n</style></head><body>\n<h1>${fileName} Solutions</h1>`;\n\nswitch (assignmentType.toLowerCase()) {\n  case 'math':\n    prompt += `Format equations as $$x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}$$`;\n    break;\n  case 'data structures':\n    prompt += `Format code as <pre><code class=\"language-python\">def func(): pass</code></pre>`;\n    break;\n  case 'oops':\n    prompt += `Provide class diagrams using UML notation`;\n    break;\n}\n\nprompt += `</body></html>\\n\\nAssignment content:\\n${content}`;\n\nreturn [{\n  json: {\n    prompt,\n    userEmail,\n    fileName: `${fileName}_solutions.pdf`,\n    assignmentType\n  }\n}];"
+      },
+      "id": "6d840d20-6bca-4d55-9470-49204a09f8a5",
+      "name": "Prepare Gemini Request1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        464,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={}",
+        "options": {
+          "bodyContentType": "json",
+          "fullResponse": false
+        }
+      },
+      "id": "b10810df-a3f1-426d-87d3-e88374ddd4a5",
+      "name": "Gemini Analysis1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        656,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const htmlContent = $node[\"Gemini Analysis1\"]?.json?.candidates?.[0]?.content?.parts?.[0]?.text || '<html><body><h1>Error: No content received</h1></body></html>';\nconst userEmail = $node[\"Prepare Gemini Request1\"].json.userEmail;\nconst fileName = $node[\"Prepare Gemini Request1\"].json.fileName;\n\nreturn [{\n  json: {\n    htmlContent,\n    userEmail,\n    fileName,\n    subject: `${$node[\"Prepare Gemini Request1\"].json.assignmentType} Assignment Solutions`\n  }\n}];"
+      },
+      "id": "383fb7e9-d5be-4b45-b5e6-41d138c3e555",
+      "name": "Process HTML1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        848,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "https://api.pdfshift.io/v3/convert/pdf",
+        "options": {
+          "bodyContentType": "json",
+          "fullResponse": true,
+          "timeout": 30000
+        }
+      },
+      "id": "d45e3b6c-2a98-42b5-bff1-56e02633a348",
+      "name": "PDFShift API1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const pdfResponse = $node[\"PDFShift API1\"].json;\n\nif (!pdfResponse?.data) {\n  throw new Error(`PDF conversion failed: ${JSON.stringify(pdfResponse)}`);\n}\n\nreturn [{\n  json: $node[\"Process HTML1\"].json,\n  binary: {\n    data: await this.helpers.prepareBinaryData(\n      Buffer.from(pdfResponse.data, 'base64'),\n      $node[\"Process HTML1\"].json.fileName,\n      'application/pdf'\n    )\n  }\n}];"
+      },
+      "id": "e954ac9d-eb63-4167-a672-e5c4cbece7e1",
+      "name": "Process PDF1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "lostndfoun@gmail.com",
+        "toEmail": "srinanthmv845@gmail.com",
+        "subject": "={{$node[\"Process PDF1\"].json[\"subject\"]}}",
+        "text": "Your assignment solutions are attached.",
+        "attachments": {
+          "attachments": [
+            {
+              "name": "={{$node[\"Process PDF1\"].json[\"fileName\"]}}",
+              "property": "binary.data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ed5ad0b9-da4e-4037-bd0a-53b830fabd19",
+      "name": "Send Email1",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        1424,
+        560
+      ],
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Gemini Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Gemini Request1": {
+      "main": [
+        [
+          {
+            "node": "Gemini Analysis1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Analysis1": {
+      "main": [
+        [
+          {
+            "node": "Process HTML1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process HTML1": {
+      "main": [
+        [
+          {
+            "node": "PDFShift API1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFShift API1": {
+      "main": [
+        [
+          {
+            "node": "Process PDF1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process PDF1": {
+      "main": [
+        [
+          {
+            "node": "Send Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "3bb4d6d8b1ec391588937b6c2321c3498f9da517bdc068d5f874d956c90c0a0c"
+  }
+}
