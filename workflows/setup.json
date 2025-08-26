@@ -6,180 +6,215 @@
         "path": "upload",
         "options": {}
       },
-      "id": "c469a310-e10e-4628-8667-3580d28b395a",
-      "name": "Webhook1",
+      "id": "94e93072-b049-4986-98bf-ca43bb5e2f3f",
+      "name": "Assignment Upload Webhook2",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        208,
-        560
+        1632,
+        1568
       ],
-      "webhookId": "06b8db56-21fb-4b30-9846-04a089083130"
+      "webhookId": "upload-test"
     },
     {
       "parameters": {
-        "jsCode": "const safeString = (str) => (typeof str === 'string' ? str : '');\n\nconst assignmentType = safeString(items[0]?.json?.assignmentType) || 'general';\nconst content = safeString(items[0]?.json?.content);\nconst userEmail = safeString(items[0]?.json?.userEmail) || 'no-email@example.com';\nconst fileName = safeString(items[0]?.json?.fileName).replace(/\\.[^.]+$/, '') || 'assignment';\n\nlet prompt = `<!DOCTYPE html><html><head><style>\n  body { font-family: Arial; line-height: 1.6; margin: 2cm; }\n  pre { background: #f8f9fa; padding: 15px; border-radius: 5px; }\n</style></head><body>\n<h1>${fileName} Solutions</h1>`;\n\nswitch (assignmentType.toLowerCase()) {\n  case 'math':\n    prompt += `Format equations as $$x = \\\\frac{-b \\\\pm \\\\sqrt{b^2-4ac}}{2a}$$`;\n    break;\n  case 'data structures':\n    prompt += `Format code as <pre><code class=\"language-python\">def func(): pass</code></pre>`;\n    break;\n  case 'oops':\n    prompt += `Provide class diagrams using UML notation`;\n    break;\n}\n\nprompt += `</body></html>\\n\\nAssignment content:\\n${content}`;\n\nreturn [{\n  json: {\n    prompt,\n    userEmail,\n    fileName: `${fileName}_solutions.pdf`,\n    assignmentType\n  }\n}];"
+        "jsCode": "// Prepare data for Gemini API\n// The file comes as binary data in items[0].binary.file.data\nconst binaryData = items[0].binary.file.data;\nconst assignmentType = items[0].json.assignmentType;\nconst userEmail = items[0].json.userEmail;\nconst fileName = items[0].json.filename;\nconst mimeType = items[0].json.mimeType;\n\n// Convert binary data to base64 for Gemini\nconst base64Data = binaryData;\n\n// Prepare the output\nreturn [{\n  json: {\n    file: base64Data,\n    filename: fileName,\n    assignmentType: assignmentType,\n    userEmail: userEmail,\n    mimeType: mimeType\n  },\n  binary: {\n    file: items[0].binary.file\n  }\n}];"
       },
-      "id": "6d840d20-6bca-4d55-9470-49204a09f8a5",
-      "name": "Prepare Gemini Request1",
       "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        1568
+      ],
+      "id": "26e4fab7-ae31-45b8-a307-c2ca63dcb0d1",
+      "name": "Process File Data1"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.0-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.0-flash"
+        },
+        "text": "Analyze this assignment file and provide comprehensive answers. Format the response in clean HTML with proper styling. Include:\\n1. A title with the assignment type\\n2. Well-structured answers with appropriate headings\\n3. Clear formatting for readability\\n4. Use CSS styling for a professional look\n",
+        "inputType": "binary",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1,
       "position": [
-        464,
-        560
-      ]
-    },
-    {
-      "parameters": {
-        "requestMethod": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={}",
-        "options": {
-          "bodyContentType": "json",
-          "fullResponse": false
+        2000,
+        1568
+      ],
+      "id": "2948a7bf-3960-4bf2-acd2-4f975d929be4",
+      "name": "Analyze with Gemini1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MVkdTvD2YX3cyJeD",
+          "name": "Google Gemini(PaLM) Api account 2"
         }
-      },
-      "id": "b10810df-a3f1-426d-87d3-e88374ddd4a5",
-      "name": "Gemini Analysis1",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 1,
-      "position": [
-        656,
-        560
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const htmlContent = $node[\"Gemini Analysis1\"]?.json?.candidates?.[0]?.content?.parts?.[0]?.text || '<html><body><h1>Error: No content received</h1></body></html>';\nconst userEmail = $node[\"Prepare Gemini Request1\"].json.userEmail;\nconst fileName = $node[\"Prepare Gemini Request1\"].json.fileName;\n\nreturn [{\n  json: {\n    htmlContent,\n    userEmail,\n    fileName,\n    subject: `${$node[\"Prepare Gemini Request1\"].json.assignmentType} Assignment Solutions`\n  }\n}];"
-      },
-      "id": "383fb7e9-d5be-4b45-b5e6-41d138c3e555",
-      "name": "Process HTML1",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 1,
-      "position": [
-        848,
-        560
-      ]
+      }
     },
     {
       "parameters": {
         "requestMethod": "POST",
         "url": "https://api.pdfshift.io/v3/convert/pdf",
+        "jsonParameters": true,
         "options": {
           "bodyContentType": "json",
           "fullResponse": true,
           "timeout": 30000
-        }
+        },
+        "bodyParametersJson": "{\n  \"source\": \"{{ $json.html }}\",\n  \"filename\": \"{{ $json.filename }}.pdf\"\n}"
       },
-      "id": "d45e3b6c-2a98-42b5-bff1-56e02633a348",
-      "name": "PDFShift API1",
+      "id": "2a1f2678-6ca8-4c98-bffd-ac9816d072a6",
+      "name": "Convert to PDF1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
       "position": [
-        1040,
-        560
+        2528,
+        1568
       ]
     },
     {
       "parameters": {
-        "jsCode": "const pdfResponse = $node[\"PDFShift API1\"].json;\n\nif (!pdfResponse?.data) {\n  throw new Error(`PDF conversion failed: ${JSON.stringify(pdfResponse)}`);\n}\n\nreturn [{\n  json: $node[\"Process HTML1\"].json,\n  binary: {\n    data: await this.helpers.prepareBinaryData(\n      Buffer.from(pdfResponse.data, 'base64'),\n      $node[\"Process HTML1\"].json.fileName,\n      'application/pdf'\n    )\n  }\n}];"
+        "functionCode": "// Extract PDF data and preserve all original data\nconst pdfData = items[0].json;\n\n// The PDF is returned as base64 in the response\n// We need to convert it to binary for email attachment\nconst pdfBuffer = Buffer.from(pdfData.data, 'base64');\n\n// Pass through all the original data and add PDF binary\nreturn [{\n  json: {\n    filename: $json.originalFilename, // Use original filename for email\n    assignmentType: $json.assignmentType,\n    userEmail: $json.userEmail,\n    pdfData: pdfData\n  },\n  binary: {\n    pdf: {\n      data: pdfBuffer.toString('base64'),\n      mimeType: 'application/pdf',\n      fileName: `${$json.filename}.pdf` // Use sanitized filename for attachment\n    }\n  }\n}];"
       },
-      "id": "e954ac9d-eb63-4167-a672-e5c4cbece7e1",
-      "name": "Process PDF1",
-      "type": "n8n-nodes-base.code",
+      "id": "c0456382-ece9-456e-a754-4ae6279b0d2f",
+      "name": "Process PDF Data1",
+      "type": "n8n-nodes-base.function",
       "typeVersion": 1,
       "position": [
-        1232,
-        560
+        2704,
+        1568
       ]
     },
     {
       "parameters": {
-        "fromEmail": "lostndfoun@gmail.com",
+        "fromEmail": "losndfoun@gmail.com",
         "toEmail": "srinanthmv845@gmail.com",
-        "subject": "={{$node[\"Process PDF1\"].json[\"subject\"]}}",
-        "text": "Your assignment solutions are attached.",
-        "attachments": {
-          "attachments": [
-            {
-              "name": "={{$node[\"Process PDF1\"].json[\"fileName\"]}}",
-              "property": "binary.data"
-            }
-          ]
-        },
-        "options": {}
+        "subject": "={{ \"Processed Assignment: \" + $json.assignmentType }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
       },
-      "id": "ed5ad0b9-da4e-4037-bd0a-53b830fabd19",
-      "name": "Send Email1",
+      "id": "28df16aa-2e0a-4818-99a4-f5b7cf5f98f6",
+      "name": "Send Email2",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
       "position": [
-        1424,
-        560
+        2880,
+        1568
       ],
-      "credentials": {}
+      "credentials": {
+        "smtp": {
+          "id": "LTKGvE1DYXfHKSvD",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the HTML response from Gemini\nlet htmlContent = '';\n\nif (items[0].json.candidates && items[0].json.candidates[0].content.parts[0].text) {\n  htmlContent = items[0].json.candidates[0].content.parts[0].text;\n} else {\n  // Fallback if structure is different\n  htmlContent = JSON.stringify(items[0].json, null, 2);\n}\n\n// Pass through all the original data\nreturn [{\n  json: {\n    html: htmlContent,\n    filename: items[0].json.filename,\n    assignmentType: items[0].json.assignmentType,\n    userEmail: items[0].json.userEmail\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        1568
+      ],
+      "id": "10b71eb7-2867-4e22-ab0b-0d7c9521460e",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n// Sanitize filename for PDFShift - only alphanumeric, dash, and underscore\nconst originalFilename = items[0].json.filename;\n\nconst assignmentType = $json.assignmentType;\n\n// Remove file extension and sanitize\nconst baseName = originalFilename.replace(/\\.[^/.]+$/, \"\"); // Remove extension\nconst sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9-_]/g, '_'); // Replace invalid chars with underscore\n\n// Create a clean filename\nconst cleanFilename = `${sanitizedBaseName}_${assignmentType.replace(/[^a-zA-Z0-9-_]/g, '_')}`;\n\n// Pass through all data with cleaned filename\nreturn [{\n  json: {\n    html: $json.html,\n    filename: cleanFilename,\n    originalFilename: originalFilename,\n    assignmentType: assignmentType,\n    userEmail: $json.userEmail\n  }\n}];\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        1616
+      ],
+      "id": "57a88cfb-8935-40ee-8f63-2ff1a27b8c5f",
+      "name": "Code2"
     }
   ],
   "connections": {
-    "Webhook1": {
+    "Assignment Upload Webhook2": {
       "main": [
         [
           {
-            "node": "Prepare Gemini Request1",
+            "node": "Process File Data1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Prepare Gemini Request1": {
+    "Process File Data1": {
       "main": [
         [
           {
-            "node": "Gemini Analysis1",
+            "node": "Analyze with Gemini1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini Analysis1": {
+    "Analyze with Gemini1": {
       "main": [
         [
           {
-            "node": "Process HTML1",
+            "node": "Code1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Process HTML1": {
+    "Convert to PDF1": {
       "main": [
         [
           {
-            "node": "PDFShift API1",
+            "node": "Process PDF Data1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "PDFShift API1": {
+    "Process PDF Data1": {
       "main": [
         [
           {
-            "node": "Process PDF1",
+            "node": "Send Email2",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Process PDF1": {
+    "Code1": {
       "main": [
         [
           {
-            "node": "Send Email1",
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Convert to PDF1",
             "type": "main",
             "index": 0
           }
@@ -189,6 +224,7 @@
   },
   "pinData": {},
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "3bb4d6d8b1ec391588937b6c2321c3498f9da517bdc068d5f874d956c90c0a0c"
   }
 }
