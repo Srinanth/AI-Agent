@@ -1,7 +1,10 @@
-from fastapi import FastAPI, UploadFile, Form, HTTPException
+from fastapi import FastAPI, UploadFile, Form, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
+from weasyprint import HTML
+from starlette.responses import JSONResponse
+import base64
 import httpx
-import os
+import json
 
 app = FastAPI()
 
@@ -12,8 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Use your n8n production webhook URL here
 N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/upload"
+N8N_PDF_CALLBACK_URL = "http://localhost:5678/webhook/pdf-callback"  # Changed to match n8n webhook
 
 @app.post("/api/upload")
 async def upload_assignment(
@@ -22,25 +25,62 @@ async def upload_assignment(
     user_email: str = Form(...)
 ):
     try:
-        # We don't parse the file here. We send it directly.
         files = {'file': (file.filename, file.file, file.content_type)}
         data = {
             'assignmentType': assignment_type,
             'userEmail': user_email
         }
-        
+
         async with httpx.AsyncClient() as client:
-            # Send as multipart/form-data
             response = await client.post(
                 N8N_WEBHOOK_URL,
                 files=files,
                 data=data,
-                timeout=60.0  # Increased timeout for file uploads
+                timeout=60.0
             )
-        
-        response.raise_for_status() # Raises an exception for 4xx/5xx responses
-            
+
+        response.raise_for_status()
         return {"status": "success", "message": "Assignment submitted for processing"}
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/convert-html")
+async def convert_html_to_pdf(
+    html: str = Body(...),
+    filename: str = Body("document"),
+    userEmail: str = Body(...),
+    assignmentType: str = Body(...)
+):
+    try:
+        # Convert HTML to PDF
+        pdf_bytes = HTML(string=html).write_pdf()
+        pdf_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
+        
+        # Send the PDF back to n8n via the callback webhook
+        payload = {
+            "pdf_base64": pdf_base64,
+            "filename": filename,
+            "userEmail": userEmail,
+            "assignmentType": assignmentType
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                N8N_PDF_CALLBACK_URL,  # Use the callback URL
+                json=payload,
+                timeout=60.0
+            )
+        
+        response.raise_for_status()
+        
+        # Return success response to the original HTTP Request node
+        return JSONResponse({
+            "success": True,
+            "message": "PDF converted successfully",
+            "callback_sent": True
+        })
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF conversion failed: {str(e)}")
