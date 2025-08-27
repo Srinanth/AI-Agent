@@ -5,7 +5,9 @@ from starlette.responses import JSONResponse
 import base64
 import httpx
 import json
-
+import os
+from dotenv import load_dotenv
+load_dotenv()
 app = FastAPI()
 
 app.add_middleware(
@@ -15,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/upload"
+N8N_WEBHOOK_URL = os.getenv("N8N_WEBHOOK_URL")
 @app.post("/api/upload")
 async def upload_assignment(
     file: UploadFile,

@@ -7,6 +7,7 @@ charset-normalizer==3.4.3
 click==8.2.1
 cryptography==45.0.6
 cssselect2==0.8.0
+dotenv==0.9.9
 fastapi==0.116.1
 fonttools==4.59.1
 h11==0.16.0
@@ -24,6 +25,7 @@ pydyf==0.11.0
 pypdfium2==4.30.0
 pyphen==0.17.2
 python-docx==1.2.0
+python-dotenv==1.1.1
 python-multipart==0.0.20
 python-pptx==1.0.2
 requests==2.32.4
