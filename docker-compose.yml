@@ -20,14 +20,3 @@ services:
       - PDFSHIFT_API_KEY={PDF}
     volumes:
       - ./n8n_data:/home/node/.n8n
-
-  # Optional: FastAPI service
-  # backend:
-  #   build: ./backend
-  #   restart: always
-  #   ports:
-  #     - "8000:8000"
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - ./backend:/app
