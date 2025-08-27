@@ -2,55 +2,6 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "// Sanitize filename for PDFShift - only alphanumeric, dash, and underscore\nconst originalFilename = $json.filename;\nconst assignmentType = $json.assignmentType;\n\n// Remove file extension and sanitize\nconst baseName = originalFilename.replace(/\\.[^/.]+$/, \"\");\nconst sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9-_]/g, '_');\n\n// Create a clean filename (max 50 chars for PDFShift)\nconst cleanFilename = `${sanitizedBaseName}_${assignmentType.replace(/[^a-zA-Z0-9-_]/g, '_')}`.substring(0, 50);\n\nreturn [{\n  json: {\n    html: $json.html,\n    filename: cleanFilename,\n    originalFilename: originalFilename,\n    assignmentType: assignmentType,\n    userEmail: $json.userEmail\n  }\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        3712,
-        3712
-      ],
-      "id": "2755f133-cc65-4255-9a9f-b67bf74d8038",
-      "name": "Sanitize Filename"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.pdfshift.io/v3/convert/pdf",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBasicAuth",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "=source",
-              "value": "={{$json[\"html\"]}}"
-            },
-            {
-              "name": "filename",
-              "value": "={{$json[\"filename\"]}}.pdf"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        3904,
-        3712
-      ],
-      "id": "b18c80f6-605a-47ba-86e6-f62ad3ac052e",
-      "name": "PDFShift Converter",
-      "credentials": {
-        "httpBasicAuth": {
-          "id": "20XQfvD5zr9IICxU",
-          "name": "Unnamed credential"
-        }
-      }
-    },
-    {
-      "parameters": {
         "httpMethod": "POST",
         "path": "upload",
         "options": {}
@@ -87,7 +38,7 @@
           "mode": "list",
           "cachedResultName": "models/gemini-2.0-flash"
         },
-        "text": "Analyze this assignment file and provide comprehensive answers.\n\nYour response MUST be ONLY the raw HTML code.\nThe response must begin directly with \"<!DOCTYPE html>\".\nDo not include any other text, explanations, headers, or markdown formatting like ```html.\nnever wrap the contents in markdown\n\nFormat the response in clean HTML with proper styling. Include:\n1. A title with the assignment type\n2. Well-structured answers with appropriate headings\n3. Clear formatting for readability\n4. Use CSS styling for a professional look",
+        "text": "You are an expert AI academic assistant. Your sole purpose is to analyze the provided assignment content and generate answers formatted in a single, raw HTML file.\n\n**Primary Directive: Output Format**\nYour entire response MUST be only raw HTML code.\n* The response **MUST** begin immediately with `<!DOCTYPE html>`.\n* There must be **ABSOLUTELY NO** other text, explanations, or markdown formatting like ` ```html ` before or after the HTML block.\n* The HTML should be self-contained, using internal CSS for professional styling, a main title, and clear headings for each answer.\n\n---\n**NEW HTML HEAD DIRECTIVE** In the `<head>` section of the generated HTML, you **MUST** include the MathJax library to properly render LaTeX equations. Add the following two script tags exactly as shown:\n\n<script>\nMathJax = {\n  tex: {\n    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],\n    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']]\n  }\n};\n</script>\n<script id=\"MathJax-script\" async src=\"[https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js](https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js)\"></script>\n\n---\n\n**Secondary Directive: Subject-Specific Rules**\nFor each question in the assignment, you must identify the subject and apply the corresponding rules below with absolute precision.\n\n## For Mathematics Questions:\n* Provide a complete, step-by-step solution for each problem.\n* **NEVER** skip any logical or computational steps. Show all intermediate calculations and derivations clearly.\n* **DO NOT** approximate or jump directly to the final answer. The entire process of reaching the solution must be documented.\n* Use LaTeX, enclosed in `$` for inline math and `$$` for block equations, for all mathematical symbols, variables, and formulas.\n\n## For Java Programming Questions:\n* Provide the complete, compilable Java program as the answer.\n* The code **MUST NOT** contain any comments.\n* Use descriptive, human-like variable names (e.g., `studentFirstName`, `itemCounter`, `maxHeight` instead of `s`, `i`, `m`).\n* Only implement the exact functionality requested in the problem. **DO NOT** add extra features or methods not specified.\n\n## For Data Structures and Algorithms (DSA) Questions:\n* The programming language for all DSA solutions **MUST be C only**. Never use C++, Java, or any other language.\n* Each answer must have two distinct, clearly labeled parts:\n    1.  **Algorithm**: Write a clear, step-by-step algorithm or pseudocode. **This section MUST have comments** explaining the logic of each step (e.g., what a loop is doing, the purpose of a condition).\n    2.  **C Program**: Provide the complete C program that directly implements the described algorithm. This code should **NOT** have comments.\n* In the C program, use descriptive, human-like variable names.\n* The program's logic must be simple and directly follow the algorithm's steps. Avoid complex, one-line operations.\n\n---\n**Begin Assignment Analysis**\n\nNow, process the assignment content below and generate the response strictly following all directives listed above.\n\n",
         "inputType": "binary",
         "binaryPropertyName": "file",
         "options": {}
@@ -109,7 +60,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract the actual HTML from Gemini response\nlet htmlContent = '';\n\nif (\n  items[0].json.content &&\n  items[0].json.content.parts &&\n  items[0].json.content.parts.length > 0 &&\n  items[0].json.content.parts[0].text\n) {\n  htmlContent = items[0].json.content.parts[0].text;\n} else if (\n  items[0].json.candidates &&\n  items[0].json.candidates[0].content &&\n  items[0].json.candidates[0].content.parts[0].text\n) {\n  htmlContent = items[0].json.candidates[0].content.parts[0].text;\n} else {\n  htmlContent = JSON.stringify(items[0].json, null, 2);\n}\n\nreturn [\n  {\n    json: {\n      html: htmlContent,\n      filename: items[0].json.filename || 'document',\n      assignmentType: items[0].json.assignmentType || 'Assignment',\n      userEmail: items[0].json.userEmail || ''\n    }\n  }\n];"
+        "jsCode": "// Extract the actual HTML from Gemini response\nlet htmlContent = '';\n\n// --- Existing logic to find the text response ---\nif (\n  items[0].json.content &&\n  items[0].json.content.parts &&\n  items[0].json.content.parts.length > 0 &&\n  items[0].json.content.parts[0].text\n) {\n  htmlContent = items[0].json.content.parts[0].text;\n} else if (\n  items[0].json.candidates &&\n  items[0].json.candidates[0].content &&\n  items[0].json.candidates[0].content.parts[0].text\n) {\n  htmlContent = items[0].json.candidates[0].content.parts[0].text;\n} else {\n  // Fallback for debugging if structure is unexpected\n  htmlContent = JSON.stringify(items[0].json, null, 2);\n}\n\n\n// --- NEW CODE TO CLEAN THE RESPONSE ---\n// This regular expression finds and removes the starting ```html and the closing ```.\n// It also handles surrounding whitespace and newlines, making it robust.\nconst cleanedHtml = htmlContent.replace(/^`{3}(?:html)?\\s*|\\s*`{3}$/g, '').trim();\n\n\n// --- Return the cleaned data ---\nreturn [\n  {\n    json: {\n      html: cleanedHtml, // Use the cleaned variable here\n      filename: items[0].json.filename || 'document',\n      assignmentType: items[0].json.assignmentType || 'Assignment',\n      userEmail: items[0].json.userEmail || ''\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -122,32 +73,21 @@
     },
     {
       "parameters": {
-        "functionCode": "// Process PDF response from PDFShift\nconst pdfData = items[0].binary.pdf.data;\n\n// Pass through all the original data and add PDF binary\nreturn [{\n  json: {\n    filename: $json.originalFilename,\n    assignmentType: $json.assignmentType,\n    userEmail: $json.userEmail\n  },\n  binary: {\n    pdf: {\n      data: pdfData,\n      mimeType: 'application/pdf',\n      fileName: `${$json.filename}.pdf`\n    }\n  }\n}];"
-      },
-      "id": "7baf7837-aa68-4706-a88a-5590d7901ca3",
-      "name": "Process PDF Data2",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [
-        4096,
-        3712
-      ]
-    },
-    {
-      "parameters": {
         "fromEmail": "losndfoun@gmail.com",
-        "toEmail": "={{$json.userEmail}}",
+        "toEmail": "=srinanthmv845@gmail.com",
         "subject": "={{ \"Processed Assignment: \" + $json.assignmentType }}",
+        "html": "={{ $json.html }}",
+        "attachments": "data",
         "options": {
           "allowUnauthorizedCerts": true
         }
       },
-      "id": "aa83b90d-178a-4241-bd72-f03c24b82ea6",
-      "name": "Send Email1",
+      "id": "7e3b56c3-e188-4d4e-9ef4-b04ed24fdaf6",
+      "name": "Send Email4",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
       "position": [
-        4288,
+        4176,
         3712
       ],
       "credentials": {
@@ -156,31 +96,47 @@
           "name": "SMTP account"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdfshift.io/v3/convert/pdf",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=source",
+              "value": "={{$json[\"html\"]}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3824,
+        3712
+      ],
+      "id": "f3aee5e0-2dc2-404b-8652-558c4fda7098",
+      "name": "PDFShift Converter1",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "20XQfvD5zr9IICxU",
+          "name": "Unnamed credential"
+        }
+      }
     }
   ],
   "connections": {
-    "Sanitize Filename": {
-      "main": [
-        [
-          {
-            "node": "PDFShift Converter",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "PDFShift Converter": {
-      "main": [
-        [
-          {
-            "node": "Process PDF Data2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Assignment Upload Webhook1": {
       "main": [
         [
@@ -218,18 +174,18 @@
       "main": [
         [
           {
-            "node": "Sanitize Filename",
+            "node": "PDFShift Converter1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Process PDF Data2": {
+    "PDFShift Converter1": {
       "main": [
         [
           {
-            "node": "Send Email1",
+            "node": "Send Email4",
             "type": "main",
             "index": 0
           }
