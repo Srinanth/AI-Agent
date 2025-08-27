@@ -17,7 +17,7 @@ This project automates the tedious process of initial assignment review. It's a 
 
 1.  **Accepts Submissions:** Provides a clean React frontend for students to upload their work and select an assignment type.
 2.  **Processes Files:** A FastAPI backend reliably extracts text from PDFs, Word documents, and PowerPoint presentations.
-3.  **Orchestrates with n8n:** The heart of the system. n8n manages the entire workflow: receiving the submission, constructing the perfect prompt for an LLM (like OpenAI's GPT-4), and handling the AI's response.
+3.  **Orchestrates with n8n:** The heart of the system. n8n manages the entire workflow: receiving the submission, constructing the perfect html strucuture with the answers
 4.  **Leverages AI:** Uses advanced LLMs to provide intelligent, context-aware feedback and grading on assignments, from essays to math problems.
 5.  **Delivers Results:** Automatically sends a beautifully formatted email to the student with their feedback and grade.
 6.  **Scales & Recovers:** Built with Docker for easy deployment and uses Supabase (PostgreSQL) to ensure n8n's state and workflow data are persistent and reliable.
@@ -120,13 +120,6 @@ This system is designed to be deployed to a cloud host like Render, DigitalOcean
 3.  Export the new workflow JSON to the `workflows/` directory.
 4.  Update the FastAPI backend or frontend to include the new type as an option.
 
-## 🚢 CI/CD
-
-This project uses GitHub Actions for Continuous Integration and Deployment (CI/CD). On every push to the `main` branch, it automatically:
-
-- Builds the Docker images for the backend and frontend.
-- Runs basic tests (if defined).
-- Pushes the successfully built images to a container registry, ready for deployment.
 
 ## 🛡️ Security & Backups
 
@@ -137,6 +130,13 @@ This project uses GitHub Actions for Continuous Integration and Deployment (CI/C
   - **Workflows:** The exported JSON files in `workflows/` serve as code-based backups.
   - **Database:** Supabase offers automated daily backups. For extra safety, consider a custom script to export n8n data periodically.
 
+## 🚢 CI/CD [For future implementaion]
+
+This project uses GitHub Actions for Continuous Integration and Deployment (CI/CD). On every push to the `main` branch, it automatically:
+
+- Builds the Docker images for the backend and frontend.
+- Runs basic tests (if defined).
+- Pushes the successfully built images to a container registry, ready for deployment.
 ## 📄 License
 
 This project is licensed under the MIT License.
