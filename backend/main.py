@@ -19,13 +19,11 @@ N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/upload"
 @app.post("/api/upload")
 async def upload_assignment(
     file: UploadFile,
-    assignment_type: str = Form(...),
     user_email: str = Form(...)
 ):
     try:
         files = {'file': (file.filename, file.file, file.content_type)}
         data = {
-            'assignmentType': assignment_type,
             'userEmail': user_email
         }
 
