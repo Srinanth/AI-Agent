@@ -16,8 +16,6 @@ app.add_middleware(
 )
 
 N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/upload"
-N8N_PDF_CALLBACK_URL = "http://localhost:5678/webhook/pdf-callback"  # Changed to match n8n webhook
-
 @app.post("/api/upload")
 async def upload_assignment(
     file: UploadFile,
