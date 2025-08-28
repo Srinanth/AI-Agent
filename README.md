@@ -1,4 +1,4 @@
-# Assignment Agent: AI-Powered Grading Assistant
+# Assignment Agent: AI-Powered Assistant
 
 A full-stack, automated assignment evaluation system built on modern workflow automation. This agent accepts student submissions (PDF, DOCX, PPTX), uses Large Language Models (LLMs) to generate feedback and grades based on configurable rubrics, and emails the results back to students—all without manual intervention.
 
