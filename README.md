@@ -41,6 +41,9 @@ I built this project to deeply understand and implement cutting-edge "agentic" w
 - `workflows/` - Exported JSON definitions of the core n8n workflows for version control.
 - `.env.example` - Template for all required environment variables.
 
+## The N8N Workflow of this project:
+![Workflow](./screenshots/workflow.webp )
+
 ## 🤔 For Beginners: What are n8n and Docker?
 
 ### n8n
