@@ -1,6 +1,7 @@
 # Assignment Agent: AI-Powered Assistant
 
-A full-stack, automated assignment evaluation system built on modern workflow automation. This agent accepts student submissions (PDF, DOCX, PPTX), uses Large Language Models (LLMs) to generate feedback and grades based on configurable rubrics, and emails the results back to students—all without manual intervention.
+A full-stack automation system that **completes assignments on your behalf**.  
+Simply upload your work (PDF, DOCX, PPTX), the agent processes it, uses Large Language Models (LLMs) to generate answers, and emails the completed assignment back to you for confirmation—all with minimal manual effort.
 
 ### 🌐 Live Demo  
 [**AssignAgent**](https://assignment-agent.vercel.app/)  
@@ -13,14 +14,14 @@ If the service seems unresponsive:
 
 ## 🌟 What This Project Does
 
-This project automates the tedious process of initial assignment review. It's a powerful agent that:
+This project automates the process of handling assignments. It:
 
-1.  **Accepts Submissions:** Provides a clean React frontend for students to upload their work and select an assignment type.
-2.  **Processes Files:** A FastAPI backend reliably extracts text from PDFs, Word documents, and PowerPoint presentations.
-3.  **Orchestrates with n8n:** The heart of the system. n8n manages the entire workflow: receiving the submission, constructing the perfect html strucuture with the answers
-4.  **Leverages AI:** Uses advanced LLMs to provide intelligent, context-aware feedback and grading on assignments, from essays to math problems.
-5.  **Delivers Results:** Automatically sends a beautifully formatted email to the student with their feedback and grade.
-6.  **Scales & Recovers:** Built with Docker for easy deployment and uses Supabase (PostgreSQL) to ensure n8n's state and workflow data are persistent and reliable.
+1.  **Accepts Submissions:** Students upload their work via a simple React frontend.
+2.  **Processes Files:** A FastAPI backend extracts text from PDFs, Word docs, and PPTs.
+3.  **Runs Workflows with n8n:** n8n orchestrates the pipeline, building a clean HTML structure for answers.
+4.  **Leverages AI:** LLMs (Gemini Pro) generate context-aware solutions based on assignment type.
+5.  **Delivers Results:** Sends the completed assignment back to the student via email for review/confirmation.
+6.  **Scales & Recovers:** Uses Docker for easy deployment and Supabase for reliable workflow state storage.
 
 I built this project to deeply understand and implement cutting-edge "agentic" workflow automation using n8n, exploring how to stitch together various cloud services and APIs into a robust, functional system.
 
@@ -44,16 +45,21 @@ I built this project to deeply understand and implement cutting-edge "agentic" w
 ## The N8N Workflow of this project:
 ![Workflow](./screenshots/workflow.webp )
 
-## 🤔 For Beginners: What are n8n and Docker?
+## Key Tools in This Project
+
+Here’s a quick overview of the main tools that make this agent possible:
 
 ### n8n
-Think of **n8n** (pronounced "n-eight-n") as a visual programming tool for connecting different apps and services. Instead of writing hundreds of lines of code to make an API call, process data, and send an email, you can create a "workflow" by dragging and dropping nodes (pre-built blocks of functionality) and connecting them. It's a powerful, open-source alternative to tools like Zapier or Make.com, perfect for building complex automation and integration agents like this one.
+An open-source workflow automation tool (like Zapier/Make). It lets you connect APIs and services with drag-and-drop nodes, making it easy to build complex automation without writing tons of code.
+
 
 ### Docker
-**Docker** is a platform that allows you to package an application with all of its dependencies (like libraries, system tools, and code) into a standardized unit called a **container**. This container can run reliably on any machine that has Docker installed. It solves the classic problem of "but it worked on my machine!" by ensuring the application environment is consistent everywhere, from a developer's laptop to a production server. The `docker-compose.yml` file is a blueprint that tells Docker how to run multiple containers (like our n8n and backend services) together.
+A platform that packages apps and their dependencies into portable containers, ensuring they run the same everywhere. We use it to run the backend and n8n together reliably.
+
 
 ### Supabase
-**Supabase** is an open-source alternative to Firebase, built on top of powerful enterprise-grade tools. It provides a full **PostgreSQL database**, which is a robust and reliable open-source relational database system. Think of it as a super-powered, organized spreadsheet in the cloud that your applications can talk to. Instead of setting up and managing your own PostgreSQL server, Supabase hosts it for you, handling complexities like security, backups, and scaling. In this project, we use it to ensure n8n's data (like workflows and execution history) is safely stored and persists even if our application containers restart.
+A hosted PostgreSQL database service. We use it to persist workflow data and application state, so the system is reliable across restarts.
+
 
 ## 🚀 Getting Started
 
