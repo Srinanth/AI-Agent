@@ -125,7 +125,7 @@ This system is designed to be deployed to a cloud host like Render, DigitalOcean
 ### Adding New Assignment Types
 
 1.  In n8n, duplicate and modify an existing workflow.
-2.  Update the prompt template in the **HTTP Request** node to instruct the LLM on the new rubric.
+2.  Update the prompt template in the **Gemini Document Analysis** node to instruct the LLM on the new rubric.
 3.  Export the new workflow JSON to the `workflows/` directory.
 4.  Update the FastAPI backend or frontend to include the new type as an option.
 
