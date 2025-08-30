@@ -68,72 +68,116 @@ A hosted PostgreSQL database service. We use it to persist workflow data and app
 
 ### Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
-- A Supabase project (for PostgreSQL)
-- API keys for Gemini (and an SMTP service for emails gmail is preferd)
+Before you start, make sure you have:
+
+* **Docker** installed: [Install Docker](https://docs.docker.com/get-docker/)
+* **Docker Compose** installed: [Install Docker Compose](https://docs.docker.com/compose/install/)
+* A **Supabase account** to create a PostgreSQL project: [Supabase](https://supabase.com/)
+* **API keys** for Gemini (LLM), SMTP email (Gmail preferred), and Telegram Bot.
+
+> **Tip:** Keep all API keys handy; you will need them to run the project.
 
 ### Local Development
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/Srinanth/AI-Agent
+   cd AI-Agent
+   ```
+
+2. **Set up Environment Variables:**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit the `.env` file with your actual credentials. Below are the required variables:
+
+   | Variable               | Description                                 | Example                      |
+   | :--------------------- | :------------------------------------------ | :--------------------------- |
+   | `SUPABASE_DB_HOST`     | Hostname of your Supabase Postgres instance | `db.xyz.supabase.co`         |
+   | `SUPABASE_DB_DATABASE` | Database name                               | `postgres`                   |
+   | `SUPABASE_DB_USER`     | Database user                               | `postgres`                   |
+   | `SUPABASE_DB_PASSWORD` | Database password                           | `your-super-secret-password` |
+   | `Gemini_API_KEY`       | Your Gemini API key                         | `sk-...`                     |
+   | `N8N_ENCRYPTION_KEY`   | Key to encrypt credentials in DB            | `random-characters-32-chars` |
+   | `SMTP_*`               | Credentials for your email service provider | -                            |
+   | `PDFSHIFT`             | API key for html to pdf conversion          | -                            |
+   | `Telegram API`         | API key for the bot setup                   | -                            |
+
+   > 💡 Check out the sample `.env.example` file in the repository for reference.
+
+
+
+
+3. **Launch Services with Docker (Backend & n8n Only)**
+
+    You can run the project without a frontend. The FastAPI backend provides a `/docs` endpoint that allows you to test all API endpoints directly.
+
+    Before starting, create and activate a Python virtual environment to ensure dependencies are isolated:
+
     ```bash
-    git clone https://github.com/Srinanth/AI-Agent
-    cd assignment-agent
+    cd backend
+    python3 -m venv venv
+    source venv/bin/activate  # Linux/Mac
+    venv\Scripts\activate     # Windows
     ```
 
-2.  **Set up Environment Variables:**
-    ```bash
-    cp .env.example .env
-    ```
-    Edit the `.env` file with your actual credentials:
-    - check out the sample env file in the repository
+    Install backend dependencies:
 
-3.  **Launch the services:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+    Start backend and n8n services using:
+
     ```bash
     docker-compose up -d
     ```
-    This will start:
-    - **n8n** on `http://localhost:5678`
-    - **FastAPI Backend** on `http://localhost:8000`
-    - The React frontend (if included in the compose setup) typically on `http://localhost:5173`
 
-4.  **Configure n8n:**
-    - Open the n8n UI (`http://localhost:5678`) and log in with the credentials you set in the `.env` file.
-    - Import the core workflows from the `workflows/` directory to get started.
+    Services will start at:
 
-5.  **Test the flow:** Upload a sample assignment through the React frontend and watch the automation magic happen!
+    * **n8n UI:** `http://localhost:5678`
+    * **FastAPI Backend:** `http://localhost:8000` (visit `http://localhost:8000/docs` for interactive API testing)
+
+    > If you want a frontend, you can set up your own React/Vite project and connect it to the backend API endpoints.
+4. **Configure n8n**
+
+    1. Open the n8n UI: `http://localhost:5678`
+    2. Log in using credentials from your `.env` file.
+    3. Import workflows from the `workflows/` folder.
+    4. Plugin your API keys and change the workflow however you want.
+
+5. **Test the Flow**
+
+    * Use the `/docs` interface to upload a sample assignment or test other endpoints.
+    * The agent will process it and return results via email or Telegram.
+
+###  Troubleshooting Tips
+
+* **Docker issues:** Ensure no other services are running on the same ports.
+* **n8n errors:** Make sure the `.env` variables are correct and imported workflows match the backend setup.
+* **API keys:** Invalid keys will prevent assignments from being processed.
+
+###  Optional Enhancements
+
+* Add a custom frontend if desired, or use FastAPI `/docs` for testing.
+* Update Gemini prompts in the workflow for custom solutions.
+* Test changes locally before deploying to cloud.
+> You are now ready to explore Assignment Agent using only the backend and n8n, or extend it with your own frontend. Check out my frontend for reference [AI Agent frontend Repository](https://github.com/Srinanth/assignment-agent)! 
 
 ## 📋 Deployment
 
 This system is designed to be deployed to a cloud host like Render, DigitalOcean, or an Oracle VM.
 
-1.  **Build & Push Images:** The GitHub Actions workflow (`.github/workflows/ci-cd.yml`) automatically builds Docker images and pushes them to a container registry (like Docker Hub or GHCR) when code is pushed to the `main` branch.
-2.  **Deploy to Host:** On your cloud host, pull the latest images and start them with `docker-compose.prod.yml`, making sure all production environment variables are set.
-3.  **Point to Production DB:** Ensure the deployed n8n instance is configured to use your live Supabase PostgreSQL database by setting the `DB_POSTGRESDB_*` environment variables correctly.
+1. **Build & Push Images:** The GitHub Actions workflow (`.github/workflows/ci-cd.yml`) automatically builds Docker images and pushes them to a container registry (like Docker Hub or GHCR) when code is pushed to the `main` branch.
+2. **Deploy to Host:** On your cloud host, pull the latest images and start them with `docker-compose.prod.yml`, making sure all production environment variables are set.
+3. **Point to Production DB:** For production deployments, configure your n8n instance to use a live Supabase PostgreSQL database by setting the `DB_POSTGRESDB_*` environment variables correctly.
 
-## 🔧 Configuration
+* ⚠️ **Note:** Supabase is **only required for production setups**. If you’re running everything locally, you do **not** need to configure Supabase and can use the default local setup.
 
-### Environment Variables
-
-| Variable | Description | Example |
-| :--- | :--- | :--- |
-| `SUPABASE_DB_HOST` | Hostname of your Supabase Postgres instance | `db.xyz.supabase.co` |
-| `SUPABASE_DB_DATABASE` | Database name | `postgres` |
-| `SUPABASE_DB_USER` | Database user | `postgres` |
-| `SUPABASE_DB_PASSWORD`| Database password | `your-super-secret-password` |
-| `Gemini_API_KEY` | Your Gemini API key | `sk-...` |
-| `N8N_ENCRYPTION_KEY` | Key to encrypt credentials in DB | `random-characters-32-chars` |
-| `SMTP_*` | Credentials for your email service provider | - |
-| `PDFSHIFT` | API key for html to pdf conversion | - |
-| `Telegram API` | API key for the bot setup | - | 
-
-### Adding New Assignment Types
-
-1.  In n8n, duplicate and modify an existing workflow.
-2.  Update the prompt template in the **Gemini Document Analysis** node to instruct the LLM on the new rubric.
-3.  Export the new workflow JSON to the `workflows/` directory.
-4.  Update the FastAPI backend or frontend to include the new type as an option.
-
+4. **Cold start delays:** Free-tier hosting may take a few minutes for first requests.
 
 ## 🛡️ Security & Backups
 
@@ -151,6 +195,7 @@ This project uses GitHub Actions for Continuous Integration and Deployment (CI/C
 - Builds the Docker images for the backend and frontend.
 - Runs basic tests (if defined).
 - Pushes the successfully built images to a container registry, ready for deployment.
+
 ## 📄 License
 
 This project is licensed under the MIT License.
