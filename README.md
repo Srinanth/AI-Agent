@@ -1,10 +1,13 @@
 # Assignment Agent: AI-Powered Assistant
 
 A full-stack automation system that **completes assignments on your behalf**.  
-Simply upload your work (PDF, DOCX, PPTX), the agent processes it, uses Large Language Models (LLMs) to generate answers, and emails the completed assignment back to you for confirmation—all with minimal manual effort.
+Simply upload your work (PDF, DOCX, PPTX,image) via the Web UI or Telegram. The agent processes it using Large Language Models (LLMs) and sends the completed assignment back to you via email or directly on Telegram, for quick confirmation — all with minimal manual effort.
 
 ### 🌐 Live Demo  
+**Web UI:**
 [**AssignAgent**](https://assignment-agent.vercel.app/)  
+**Telegram Bot**
+[AssignGen](https://t.me/assigngen_bot)  
 
 > ⚠ **Note:** This project uses free-tier hosting for both the frontend and backend, so the server may experience cold starts or temporary downtime.  
 If the service seems unresponsive:  
@@ -16,11 +19,11 @@ If the service seems unresponsive:
 
 This project automates the process of handling assignments. It:
 
-1.  **Accepts Submissions:** Students upload their work via a simple React frontend.
+1.  **Accepts Submissions:** Students upload their work via a simple React frontend or through telegram.
 2.  **Processes Files:** A FastAPI backend extracts text from PDFs, Word docs, and PPTs.
 3.  **Runs Workflows with n8n:** n8n orchestrates the pipeline, building a clean HTML structure for answers.
 4.  **Leverages AI:** LLMs (Gemini Pro) generate context-aware solutions based on assignment type.
-5.  **Delivers Results:** Sends the completed assignment back to the student via email for review/confirmation.
+5.  **Delivers Results:** Sends the completed assignment back to the student via email or back to telegram for review/confirmation.
 6.  **Scales & Recovers:** Uses Docker for easy deployment and Supabase for reliable workflow state storage.
 
 I built this project to deeply understand and implement cutting-edge "agentic" workflow automation using n8n, exploring how to stitch together various cloud services and APIs into a robust, functional system.
@@ -121,6 +124,8 @@ This system is designed to be deployed to a cloud host like Render, DigitalOcean
 | `Gemini_API_KEY` | Your Gemini API key | `sk-...` |
 | `N8N_ENCRYPTION_KEY` | Key to encrypt credentials in DB | `random-characters-32-chars` |
 | `SMTP_*` | Credentials for your email service provider | - |
+| `PDFSHIFT` | API key for html to pdf conversion | - |
+| `Telegram API` | API key for the bot setup | - | 
 
 ### Adding New Assignment Types
 
