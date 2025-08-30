@@ -43,7 +43,7 @@ I built this project to deeply understand and implement cutting-edge "agentic" w
 - `.env.example` - Template for all required environment variables.
 
 ## The N8N Workflow of this project:
-![Workflow](./screenshots/workflow.webp )
+![Workflow](./screenshots/workflow.jpeg )
 
 ## Key Tools in This Project
 
