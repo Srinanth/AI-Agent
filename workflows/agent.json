@@ -1,0 +1,613 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload",
+        "options": {}
+      },
+      "id": "2c602eb6-bc04-4fd6-abef-77039a77e4bf",
+      "name": "Server webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -432
+      ],
+      "webhookId": "upload-test"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = items[0];\n\nlet binary, fileName, mimeType, userEmail;\n\nif (item.binary?.data) {\n  // Telegram case\n  binary = item.binary.data;\n  fileName = item.binary.data.fileName;\n  mimeType = item.binary.data.mimeType;\n} else if (item.binary?.file) {\n  // Webhook case (if uploaded binary exists here)\n  binary = item.binary.file;\n  fileName = item.binary.file.fileName;\n  mimeType = item.binary.file.mimeType;\n} else {\n  // JSON-only upload (base64 in body)\n  binary = { data: item.json.file };\n  fileName = item.json.filename;\n  mimeType = item.json.mimeType;\n}\n\nreturn [{\n  json: {\n    file: binary.data,    // always base64 here\n    filename: fileName,\n    userEmail: item.json.body?.userEmail || item.json.userEmail,\n    mimeType: mimeType\n  },\n  binary: {\n    file: binary          // keep raw binary if exists\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -272
+      ],
+      "id": "01035f32-0e92-4fee-8b1f-fccf1165d4da",
+      "name": "Process File Data"
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "You are an **expert AI academic assistant**. Your task is to analyze the assignment content and generate **a single, raw HTML file** as output.\nif you dont think the uploaded file is not an assignment tell the user \" Please upload a valid file (PDF, DOCX, PPTX, PNG, JPG, max 5MB) so I can evaluate\"in an html file format \nwith the output format below.\n  ---\n  ## Output Format\n  * Only raw HTML. Start immediately with `<!DOCTYPE html>`.\n  * Self-contained HTML with:\n    - Internal CSS\n    - Main title\n    - Sections for each question/answer\n  * Use `<pre><code>` for code blocks and `<table>` for tables.\n  \n  ---\n  ## MathJax Support\n  Include MathJax in `<head>` for LaTeX:\n\n  <script>\n  MathJax = {\n    tex: {\n      inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],\n      displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']]\n    }\n  };\n  </script>\n  <script id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js\"></script>\n\n  ---\n  ## Subject Rules\n\n  ### Mathematics\n  * Provide **full step-by-step solutions**, no skipped steps.\n  * Use LaTeX for all formulas.\n\n  ### Java\n  * Provide **full compilable program**, no comments.\n  * Descriptive variable names.\n  * Only implement requested functionality.\n\n  ### DSA (C language)\n  * Include:\n    1. Algorithm/pseudocode (with comments)\n    2. Full C program (no comments)\n  * Use descriptive variables and simple logic.\n\n  ### Theory of Computation (TOC)\n  * Include sections:\n    1. **Transition Diagram**: Use LaTeX TikZ if possible. Otherwise, use SVG or CSS circles/arrows.\n    2. **Transition Table**: HTML `<table>` with clear headers.\n    3. **Transition Steps**: Show every state change explicitly.\n\n  ### Unknown Subjects\n  * Provide structured, clear textual answers using headings and lists.\n\n  ---\n  ## Error Handling\n  If content is incomplete/unclear, output a valid HTML page with:\n  `<section>Assignment content is incomplete or unclear. Please provide more details.</section>`\n\n  ---\n  ## HTML Skeleton\n  <!DOCTYPE html>\n  <html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Assignment Solutions</title>\n    <style>\n      body { font-family: Arial, sans-serif; margin: 20px; }\n      h1 { text-align: center; }\n      h2 { color: #2c3e50; margin-top: 30px; }\n      table { border-collapse: collapse; margin-top: 10px; }\n      table, th, td { border: 1px solid #444; padding: 8px; text-align: center; }\n      pre { background: #f4f4f4; padding: 10px; border-radius: 6px; }\n    </style>\n  </head>\n  <body>\n    <h1>Assignment Solutions</h1>\n    <!-- Answers go here -->\n  </body>\n  </html>\n\n  ---\n  ## Begin Analysis\n  Analyze the assignment and generate the response strictly following these rules. Output **only the raw HTML document**.\n",
+        "inputType": "binary",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -272
+      ],
+      "id": "57febc95-ea1a-45a1-ae47-bb5bc2a1c598",
+      "name": "Analyze with Gemini",
+      "retryOnFail": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MVkdTvD2YX3cyJeD",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the actual HTML from Gemini response\nlet htmlContent = '';\n\n// --- Existing logic to find the text response ---\nif (\n  items[0].json.content &&\n  items[0].json.content.parts &&\n  items[0].json.content.parts.length > 0 &&\n  items[0].json.content.parts[0].text\n) {\n  htmlContent = items[0].json.content.parts[0].text;\n} else if (\n  items[0].json.candidates &&\n  items[0].json.candidates[0].content &&\n  items[0].json.candidates[0].content.parts[0].text\n) {\n  htmlContent = items[0].json.candidates[0].content.parts[0].text;\n} else {\n  // Fallback for debugging if structure is unexpected\n  htmlContent = JSON.stringify(items[0].json, null, 2);\n}\n\n\n// --- NEW CODE TO CLEAN THE RESPONSE ---\n// This regular expression finds and removes the starting ```html and the closing ```.\n// It also handles surrounding whitespace and newlines, making it robust.\nconst cleanedHtml = htmlContent.replace(/^`{3}(?:html)?\\s*|\\s*`{3}$/g, '').trim();\n\n\n// --- Return the cleaned data ---\nreturn [\n  {\n    json: {\n      html: cleanedHtml, // Use the cleaned variable here\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -272
+      ],
+      "id": "288c2a2b-2990-4a36-9a60-12b93aae589f",
+      "name": "Clean HTML"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdfshift.io/v3/convert/pdf",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=source",
+              "value": "={{$json[\"html\"]}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        -272
+      ],
+      "id": "dd23c6a3-c27b-407c-8adb-9fd3247b276c",
+      "name": "PDFShift API",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "20XQfvD5zr9IICxU",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get values from current json (or upstream if needed)\nconst current = items[0].json;\n\nconst userEmail = current.userEmail || 'srinanthmv845@gmail.com';\n\n// Pass these to next node\nreturn [{\n  json: {\n    userEmail: userEmail,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "id": "737aa6dd-1881-41a7-aeca-f013575bed5d",
+      "name": "user email"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get html and binary from PDFShift output\nconst htmlItem = items.find(item => item.json.html);\nconst pdfItem = items.find(item => item.binary?.data);// Get userEmail\nconst emailItem = items.find(item => item.json.userEmail);\n\nreturn [{\n  json: {\n    html: htmlItem?.json?.html || '',\n    userEmail: emailItem?.json?.userEmail || ''\n  },\n  binary: {\n    file: pdfItem?.binary?.data // attach PDF binary\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "cad84046-ffae-4540-9876-b774d530ddcb",
+      "name": "Final Ouputs"
+    },
+    {
+      "parameters": {
+        "fromEmail": "losndfoun@gmail.com",
+        "toEmail": "={{ $json[\"userEmail\"] }}",
+        "subject": "={{ \"Processed Assignment: Ready for Download!!\"}}",
+        "html": "=",
+        "attachments": "file",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "e356e004-a6a6-49f5-972d-71c7b3d0eaed",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        976,
+        0
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "LTKGvE1DYXfHKSvD",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "249adff7-8c7f-4b58-88bc-5aeaebc01585",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -816,
+        -16
+      ],
+      "webhookId": "b65dbdc1-8f51-4b0f-858a-4c0dd14953bf",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "9BeTw9YVUAoRgTYa",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendDocument",
+        "chatId": "={{$json[\"chatId\"]}}",
+        "binaryData": "={{ true }}",
+        "additionalFields": {}
+      },
+      "id": "f3f242a8-7873-4c43-8332-3f9555af3ad1",
+      "name": "Send Back to Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        224
+      ],
+      "webhookId": "a0ffdbad-a7da-4333-9ff3-3cdc62411fca",
+      "credentials": {
+        "telegramApi": {
+          "id": "9BeTw9YVUAoRgTYa",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "23aeeee3-0d90-433e-873f-97991801ad5b",
+              "leftValue": "={{$json[\"chatId\"]}}",
+              "rightValue": "0",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        240
+      ],
+      "id": "2b837a57-2292-47bd-b949-b313e3bc3093",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -80,
+        240
+      ],
+      "id": "6fa7fd10-c972-43f1-a080-4873d988e5e3",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5173d79e-5f97-4a70-bbd9-38f53d455196",
+              "leftValue": "={{ $json.userEmail }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        0
+      ],
+      "id": "51962b2c-8de8-465c-8b90-18bf78b8667e",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json[\"message\"][\"chat\"][\"id\"].toString() }}",
+        "text": "file size too large",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        0
+      ],
+      "id": "31ae9589-901b-4575-a96d-4fcb0b9c86de",
+      "name": "Send a text message",
+      "webhookId": "38bb815b-baa7-4a7c-bcca-56fff25234cd",
+      "credentials": {
+        "telegramApi": {
+          "id": "9BeTw9YVUAoRgTYa",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e0ad4f46-c682-48f6-b31d-b5ee666def27",
+              "leftValue": "={{$json[\"message\"][\"document\"][\"file_size\"]}} ",
+              "rightValue": 5000000,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            },
+            {
+              "id": "eee51b6a-b469-48be-9fa5-3a288b49c889",
+              "leftValue": "={{$json[\"message\"]?.photo?.[2]?.file_size ?? 0}}",
+              "rightValue": 5000000,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -496,
+        -16
+      ],
+      "id": "23235fce-da24-4371-973c-1cef7b526454",
+      "name": "File Size"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        528,
+        0
+      ],
+      "id": "67386a8c-3e91-4b85-b081-0ab315f6d166",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -256,
+        -272
+      ],
+      "id": "935c8af5-1595-411b-a6b0-6bf89ff20221",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d2d00b5d-b58c-4c69-828f-f39359885b2d",
+              "name": "chatId",
+              "value": "={{ $json[\"message\"][\"chat\"][\"id\"].toString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -704,
+        224
+      ],
+      "id": "e76da736-ce55-4a7e-a386-1d5df0654767",
+      "name": "chatId"
+    }
+  ],
+  "connections": {
+    "Server webhook": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process File Data": {
+      "main": [
+        [
+          {
+            "node": "user email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Analyze with Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze with Gemini": {
+      "main": [
+        [
+          {
+            "node": "Clean HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean HTML": {
+      "main": [
+        [
+          {
+            "node": "PDFShift API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDFShift API": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "user email": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Ouputs": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "chatId",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "File Size",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Send Back to Telegram": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send Back to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Size": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Final Ouputs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Process File Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chatId": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "421bf51d1831693d5e58c339cb039980ab8aeb091a32fc84c27e8083cea34283"
+  }
+}
