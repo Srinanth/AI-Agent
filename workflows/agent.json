@@ -61,7 +61,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Extract the actual HTML from Gemini response\nlet htmlContent = '';\n\n// --- Existing logic to find the text response ---\nif (\n  items[0].json.content &&\n  items[0].json.content.parts &&\n  items[0].json.content.parts.length > 0 &&\n  items[0].json.content.parts[0].text\n) {\n  htmlContent = items[0].json.content.parts[0].text;\n} else if (\n  items[0].json.candidates &&\n  items[0].json.candidates[0].content &&\n  items[0].json.candidates[0].content.parts[0].text\n) {\n  htmlContent = items[0].json.candidates[0].content.parts[0].text;\n} else {\n  // Fallback for debugging if structure is unexpected\n  htmlContent = JSON.stringify(items[0].json, null, 2);\n}\n\n\n// --- NEW CODE TO CLEAN THE RESPONSE ---\n// This regular expression finds and removes the starting ```html and the closing ```.\n// It also handles surrounding whitespace and newlines, making it robust.\nconst cleanedHtml = htmlContent.replace(/^`{3}(?:html)?\\s*|\\s*`{3}$/g, '').trim();\n\n\n// --- Return the cleaned data ---\nreturn [\n  {\n    json: {\n      html: cleanedHtml, // Use the cleaned variable here\n    }\n  }\n];"
+        "jsCode": "\nlet htmlContent = '';\n\n\nif (\n  items[0].json.content &&\n  items[0].json.content.parts &&\n  items[0].json.content.parts.length > 0 &&\n  items[0].json.content.parts[0].text\n) {\n  htmlContent = items[0].json.content.parts[0].text;\n} else if (\n  items[0].json.candidates &&\n  items[0].json.candidates[0].content &&\n  items[0].json.candidates[0].content.parts[0].text\n) {\n  htmlContent = items[0].json.candidates[0].content.parts[0].text;\n} else {\n htmlContent = JSON.stringify(items[0].json, null, 2);\n}\n\n\n// --- NEW CODE TO CLEAN THE RESPONSE ---\n// This regular expression finds and removes the starting ```html and the closing ```.\n// It also handles surrounding whitespace and newlines, making it robust.\nconst cleanedHtml = htmlContent.replace(/^`{3}(?:html)?\\s*|\\s*`{3}$/g, '').trim();\n\n\nreturn [\n  {\n    json: {\n      html: cleanedHtml}\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -112,7 +112,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get values from current json (or upstream if needed)\nconst current = items[0].json;\n\nconst userEmail = current.userEmail || 'srinanthmv845@gmail.com';\n\n// Pass these to next node\nreturn [{\n  json: {\n    userEmail: userEmail,\n  },\n}];"
+        "jsCode": "const current = items[0].json;\n\nconst userEmail = current.userEmail';\n\n// Pass these to next node\nreturn [{\n  json: {\n    userEmail: userEmail,\n  },\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -125,7 +125,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get html and binary from PDFShift output\nconst htmlItem = items.find(item => item.json.html);\nconst pdfItem = items.find(item => item.binary?.data);// Get userEmail\nconst emailItem = items.find(item => item.json.userEmail);\n\nreturn [{\n  json: {\n    html: htmlItem?.json?.html || '',\n    userEmail: emailItem?.json?.userEmail || ''\n  },\n  binary: {\n    file: pdfItem?.binary?.data // attach PDF binary\n  }\n}];\n"
+        "jsCode": "const htmlItem = items.find(item => item.json.html);\nconst pdfItem = items.find(item => item.binary?.data);\nconst emailItem = items.find(item => item.json.userEmail);\n\nreturn [{\n  json: {\n    html: htmlItem?.json?.html || '',\n    userEmail: emailItem?.json?.userEmail || ''\n  },\n  binary: {\n    file: pdfItem?.binary?.data \n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
